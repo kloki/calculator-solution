@@ -23,6 +23,7 @@ def solve(calculation):
 
 numbers = "0123456789."
 operators = "-+*/"
+operator_level = {"-": 1, "+": 1, "*": 2, "/": 2}
 
 
 def parse_operator(operator):
@@ -70,7 +71,7 @@ class Node:
         return f"({self.left}){self.operator}({self.right})"
 
 
-def parse(symbols, open_node=None):
+def parse(symbols, open_node=None, level=99):
     print(symbols, open_node)
     current_symbols = symbols.pop()
     if current_symbols not in numbers and current_symbols != "-":
@@ -85,8 +86,20 @@ def parse(symbols, open_node=None):
             return left
         open_node.right = left
         return open_node
+
     operator = parse_operator(symbols.pop())
     if open_node:
         open_node.right = left
         left = open_node
-    return parse(symbols, open_node=Node(left=left, operator=operator))
+    new_level = operator_level[operator]
+    if new_level <= level:
+        return parse(
+            symbols,
+            open_node=Node(
+                left=left,
+                operator=operator,
+            ),
+            level=new_level,
+        )
+    else:
+        return Node(left, parse(symbols, level=new_level), operator)
