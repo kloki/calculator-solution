@@ -36,7 +36,7 @@ class Number:
         try:
             self.number = float(number)
         except ValueError:
-            raise InvalidCalculation(number)
+            raise InvalidNumber(number)
 
     def value(self):
         return self.number
