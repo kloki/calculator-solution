@@ -1,4 +1,5 @@
 class InvalidCalculation(Exception):
+
     pass
 
 
@@ -12,10 +13,11 @@ class InvalidNumber(InvalidCalculation):
 
 def solve(calculation):
     # Make it a list and reverse it for better popping
-    symbols = list(calculation)
-    symbols.reverse()
 
     try:
+        calculation_precheck(calculation)
+        symbols = list(calculation)
+        symbols.reverse()
         return (True, parse(symbols).value())
     except InvalidCalculation:
         return (False, 0)
@@ -24,6 +26,11 @@ def solve(calculation):
 numbers = "0123456789."
 operators = "-+*/"
 operator_level = {"-": 1, "+": 1, "*": 2, "/": 2}
+
+
+def calculation_precheck(calculation):
+    if calculation.count(")") != calculation.count("("):
+        raise InvalidCalculation("paranthesis mismatch")
 
 
 def parse_operator(operator):
@@ -79,42 +86,54 @@ class Node:
         node.right = right_most
         return self
 
-    def add_above(self, operator, number):
+    def add_above(self, operator, sub_node):
         """add new node a top the tree, implies lower priority of operator"""
-        self.append(number)
+        self.append(sub_node)
         return Node(left=self, operator=operator)
 
-    def add_below(self, operator, number):
+    def add_below(self, operator, sub_node):
         """add note to right most open node, implies higher priority of operator"""
-        self.append(Node(left=number, operator=operator))
+        self.append(Node(left=sub_node, operator=operator))
         return self
 
 
 def parse(symbols, open_node=None, level=0):
-    print(symbols, open_node, level)
     current_symbols = symbols.pop()
-    if current_symbols not in numbers and current_symbols != "-":
+    sub_node = None
+    if current_symbols == "(":
+        sub_node = parse(symbols)
+        print(sub_node)
+
+    elif current_symbols not in numbers and current_symbols != "-":
         raise InvalidNumber(current_symbols)
-    while symbols and symbols[-1] in numbers:
-        current_symbols += symbols.pop()
-    number = Number(current_symbols)
+    else:
+        while symbols and symbols[-1] in numbers:
+            current_symbols += symbols.pop()
+        sub_node = Number(current_symbols)
     # Where at the end of the calculation
     if not symbols:
         # Handle the case when its the calculation a sole number
         if not open_node:
-            return number
-        return open_node.append(number)
+            return sub_node
+        return open_node.append(sub_node)
+    # and of sub_node
+    if symbols[-1] == ")":
+        symbols.pop()
+        # Handle the case when its the calculation a sole number
+        if not open_node:
+            return sub_node
+        return open_node.append(sub_node)
 
     operator = parse_operator(symbols.pop())
     new_level = operator_level[operator]
 
     if not open_node:
-        open_node = Node(left=number, operator=operator)
+        open_node = Node(left=sub_node, operator=operator)
     else:
         if new_level <= level:
-            open_node = open_node.add_above(operator, number)
+            open_node = open_node.add_above(operator, sub_node)
         else:
-            open_node = open_node.add_below(operator, number)
+            open_node = open_node.add_below(operator, sub_node)
 
     return parse(
         symbols,
