@@ -72,26 +72,26 @@ class Node:
 
     def append(self, right_most):
         """add to pending right most open node"""
-        node = self.right
-        while node is not None:
+        node = self
+        while node.right:
             node = node.right
 
         node.right = right_most
         return self
 
     def add_above(self, operator, number):
-        """add new node a top the tree"""
+        """add new node a top the tree, implies lower priority of operator"""
         self.append(number)
         return Node(left=self, operator=operator)
 
     def add_below(self, operator, number):
-        """add note to right most open node"""
+        """add note to right most open node, implies higher priority of operator"""
         self.append(Node(left=number, operator=operator))
         return self
 
 
-def parse(symbols, open_node=None, level=99):
-    print(symbols, open_node)
+def parse(symbols, open_node=None, level=0):
+    print(symbols, open_node, level)
     current_symbols = symbols.pop()
     if current_symbols not in numbers and current_symbols != "-":
         raise InvalidNumber(current_symbols)
@@ -112,9 +112,9 @@ def parse(symbols, open_node=None, level=99):
         open_node = Node(left=number, operator=operator)
     else:
         if new_level <= level:
-            open_node.add_below(operator, number)
+            open_node = open_node.add_above(operator, number)
         else:
-            open_node.add_above(operator, number)
+            open_node = open_node.add_below(operator, number)
 
     return parse(
         symbols,
