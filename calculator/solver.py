@@ -70,6 +70,25 @@ class Node:
     def __str__(self):
         return f"({self.left}){self.operator}({self.right})"
 
+    def append(self, right_most):
+        """add to pending right most open node"""
+        node = self.right
+        while node is not None:
+            node = node.right
+
+        node.right = right_most
+        return self
+
+    def add_above(self, operator, number):
+        """add new node a top the tree"""
+        self.append(number)
+        return Node(left=self, operator=operator)
+
+    def add_below(self, operator, number):
+        """add note to right most open node"""
+        self.append(Node(left=number, operator=operator))
+        return self
+
 
 def parse(symbols, open_node=None, level=99):
     print(symbols, open_node)
@@ -78,28 +97,27 @@ def parse(symbols, open_node=None, level=99):
         raise InvalidNumber(current_symbols)
     while symbols and symbols[-1] in numbers:
         current_symbols += symbols.pop()
-    left = Number(current_symbols)
+    number = Number(current_symbols)
     # Where at the end of the calculation
     if not symbols:
         # Handle the case when its the calculation a sole number
         if not open_node:
-            return left
-        open_node.right = left
-        return open_node
+            return number
+        return open_node.append(number)
 
     operator = parse_operator(symbols.pop())
-    if open_node:
-        open_node.right = left
-        left = open_node
     new_level = operator_level[operator]
-    if new_level <= level:
-        return parse(
-            symbols,
-            open_node=Node(
-                left=left,
-                operator=operator,
-            ),
-            level=new_level,
-        )
+
+    if not open_node:
+        open_node = Node(left=number, operator=operator)
     else:
-        return Node(left, parse(symbols, level=new_level), operator)
+        if new_level <= level:
+            open_node.add_below(operator, number)
+        else:
+            open_node.add_above(operator, number)
+
+    return parse(
+        symbols,
+        open_node,
+        level=new_level,
+    )
