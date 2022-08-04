@@ -30,6 +30,12 @@ class Operator:
         self.symbol = symbol
         self.level = level
 
+    def __str__(self):
+        return self.symbol
+
+    def __repr__(self):
+        return self.__str__()
+
 
 numbers = "0123456789."
 
@@ -70,6 +76,9 @@ class Number:
     def __str__(self):
         return str(self.number)
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class Node:
     def __init__(self, left=None, right=None, operator=None, parent=None):
@@ -96,6 +105,9 @@ class Node:
     def __str__(self):
         return f"({self.left}){self.operator.symbol}({self.right})"
 
+    def __repr__(self):
+        return self.__str__()
+
     def append(self, right_most):
         """add to pending right most open node"""
         node = self
@@ -113,12 +125,15 @@ class Node:
             node = node.right
         node.right = sub_node
 
-        while node.parent and operator.level <= node.operator.level:
+        while node.parent and operator.level >= node.parent.operator.level:
             node = node.parent
 
-        new_node = Node(left=node.right, operator=operator, parent=node)
-        node.right = new_node
+        new_node = Node(left=node, operator=operator, parent=node.parent)
+        node.parent = new_node
 
+        if not new_node.parent:
+            # new node is the new top.
+            return new_node
         return self
 
     def add_below(self, operator, sub_node):
@@ -160,6 +175,7 @@ def parse(symbols, open_node=None, level=0):
         open_node = Node(left=sub_node, operator=operator)
     else:
         if operator.level <= level:
+
             open_node = open_node.add_above(operator, sub_node)
         else:
             open_node = open_node.add_below(operator, sub_node)
