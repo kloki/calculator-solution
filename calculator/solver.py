@@ -18,14 +18,27 @@ def solve(calculation):
         calculation_precheck(calculation)
         symbols = list(calculation)
         symbols.reverse()
-        return (True, parse(symbols).value())
+        answer = parse(symbols)
+        print(answer)
+        return (True, answer.value())
     except InvalidCalculation:
         return (False, 0)
 
 
+class Operator:
+    def __init__(self, symbol, level):
+        self.symbol = symbol
+        self.level = level
+
+
 numbers = "0123456789."
-operators = "-+*/"
-operator_level = {"-": 1, "+": 1, "*": 2, "/": 2}
+
+operators = [
+    Operator("-", 1),
+    Operator("+", 1),
+    Operator("*", 2),
+    Operator("/", 2),
+]
 
 
 def calculation_precheck(calculation):
@@ -33,18 +46,23 @@ def calculation_precheck(calculation):
         raise InvalidCalculation("paranthesis mismatch")
 
 
-def parse_operator(operator):
-    if operator not in operators:
-        raise InvalidOperator(operator)
-    return operator
+def parse_operator(symbol):
+    for operator in operators:
+        if operator.symbol == symbol:
+            return operator
+
+    raise InvalidOperator(operator)
 
 
 class Number:
-    def __init__(self, number):
+    def __init__(self, number, parent=None):
         try:
             self.number = float(number)
         except ValueError:
             raise InvalidNumber(number)
+        self.parent = parent
+        self.right = None
+        self.operator = Operator("", 0)
 
     def value(self):
         return self.number
@@ -54,28 +72,29 @@ class Number:
 
 
 class Node:
-    def __init__(self, left=None, right=None, operator=None):
+    def __init__(self, left=None, right=None, operator=None, parent=None):
         self.left = left
         self.right = right
         self.operator = operator
+        self.parent = parent
 
     def value(self):
         left = self.left.value()
         right = self.right.value()
-        if self.operator == "+":
+        if self.operator.symbol == "+":
             return left + right
-        if self.operator == "-":
+        if self.operator.symbol == "-":
             return left - right
-        if self.operator == "*":
+        if self.operator.symbol == "*":
             return left * right
-        if self.operator == "/":
+        if self.operator.symbol == "/":
             try:
                 return left / right
             except ZeroDivisionError:
                 raise InvalidNumber("divide by zero")
 
     def __str__(self):
-        return f"({self.left}){self.operator}({self.right})"
+        return f"({self.left}){self.operator.symbol}({self.right})"
 
     def append(self, right_most):
         """add to pending right most open node"""
@@ -84,12 +103,23 @@ class Node:
             node = node.right
 
         node.right = right_most
+        right_most.parent = node
         return self
 
     def add_above(self, operator, sub_node):
-        """add new node a top the tree, implies lower priority of operator"""
-        self.append(sub_node)
-        return Node(left=self, operator=operator)
+        """add to the highest node with similar equal or higher, implies lower priority of operator"""
+        node = self
+        while node.right:
+            node = node.right
+        node.right = sub_node
+
+        while node.parent and operator.level <= node.operator.level:
+            node = node.parent
+
+        new_node = Node(left=node.right, operator=operator, parent=node)
+        node.right = new_node
+
+        return self
 
     def add_below(self, operator, sub_node):
         """add note to right most open node, implies higher priority of operator"""
@@ -98,11 +128,11 @@ class Node:
 
 
 def parse(symbols, open_node=None, level=0):
+    print(symbols, open_node, level)
     current_symbols = symbols.pop()
     sub_node = None
     if current_symbols == "(":
         sub_node = parse(symbols)
-        print(sub_node)
 
     elif current_symbols not in numbers and current_symbols != "-":
         raise InvalidNumber(current_symbols)
@@ -125,12 +155,11 @@ def parse(symbols, open_node=None, level=0):
         return open_node.append(sub_node)
 
     operator = parse_operator(symbols.pop())
-    new_level = operator_level[operator]
 
     if not open_node:
         open_node = Node(left=sub_node, operator=operator)
     else:
-        if new_level <= level:
+        if operator.level <= level:
             open_node = open_node.add_above(operator, sub_node)
         else:
             open_node = open_node.add_below(operator, sub_node)
@@ -138,5 +167,5 @@ def parse(symbols, open_node=None, level=0):
     return parse(
         symbols,
         open_node,
-        level=new_level,
+        level=operator.level,
     )
