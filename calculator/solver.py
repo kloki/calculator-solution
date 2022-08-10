@@ -125,15 +125,17 @@ class Node:
             node = node.right
         node.right = sub_node
 
-        while node.parent and operator.level >= node.parent.operator.level:
+        while node.parent and operator.level <= node.parent.operator.level:
             node = node.parent
 
         new_node = Node(left=node, operator=operator, parent=node.parent)
         node.parent = new_node
 
+        # new node is the new top.
         if not new_node.parent:
-            # new node is the new top.
             return new_node
+
+        self.right = new_node
         return self
 
     def add_below(self, operator, sub_node):
