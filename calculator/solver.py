@@ -1,3 +1,7 @@
+import math
+import re
+
+
 class InvalidCalculation(Exception):
 
     pass
@@ -16,10 +20,10 @@ def solve(calculation):
 
     try:
         calculation_precheck(calculation)
+        calculation = calculation_format(calculation)
         symbols = list(calculation)
         symbols.reverse()
         answer = parse(symbols)
-        print(answer)
         return (True, answer.value())
     except InvalidCalculation:
         return (False, 0)
@@ -44,12 +48,23 @@ operators = [
     Operator("+", 1),
     Operator("*", 2),
     Operator("/", 2),
+    Operator("^", 3),
 ]
 
 
 def calculation_precheck(calculation):
+    """Some simple check to simplify the parser"""
     if calculation.count(")") != calculation.count("("):
         raise InvalidCalculation("paranthesis mismatch")
+
+
+def calculation_format(calculation):
+    """format the calculation"""
+    # turn 6(1*1) -> 6*(1*1)
+    calculation = re.sub(r"([0-9)])\(", r"\1*(", calculation)
+    # turn -(1*1) -> -1*(1*1) but only when its at the start. not (1)-(2)
+    calculation = re.sub(r"^-\(", r"-1*(", calculation)
+    return calculation
 
 
 def parse_operator(symbol):
@@ -101,6 +116,8 @@ class Node:
                 return left / right
             except ZeroDivisionError:
                 raise InvalidNumber("divide by zero")
+        if self.operator.symbol == "^":
+            return math.pow(left, right)
 
     def __str__(self):
         return f"({self.left}){self.operator.symbol}({self.right})"
@@ -145,7 +162,6 @@ class Node:
 
 
 def parse(symbols, open_node=None, level=0):
-    print(symbols, open_node, level)
     current_symbols = symbols.pop()
     sub_node = None
     if current_symbols == "(":

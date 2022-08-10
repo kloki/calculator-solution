@@ -5,6 +5,7 @@ class TestSolver:
     def test_simple(self):
         # assert solve("23+(9-9)")[1] == 23
         # assert solve("23+(9-9)*9")[1] == 23
+        assert solve("2^1")[1] == 2
         assert solve("1+9*3*3")[1] == 82
         assert solve("5+4+3+2+1")[1] == 15
         assert solve("4-8+12-3+7")[1] == 12
