@@ -1,0 +1,15 @@
+syntax = "proto3";
+package calculator;
+service Calculator {
+    rpc SolveStream(stream Calculation) returns (stream Solution) {}
+}
+
+
+message Calculation{
+    string calculation = 1;
+}
+
+message Solution {
+    bool solvable = 1;
+    float solution = 2;
+}
